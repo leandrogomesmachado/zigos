@@ -27,3 +27,20 @@ fn aguardaBuffer() void {
 fn configuraRegistros() void {
     std.mem.doNotOptimizeAway(uartDr);
 }
+
+pub fn leByteDisponivel() ?u8 {
+    const flags = uartFr.*;
+    if ((flags & 0x10) != 0) {
+        return null;
+    }
+    const valor = uartDr.*;
+    return @truncate(u8, valor);
+}
+
+pub fn imprimePrompt() void {
+    escreveMensagem("> ");
+}
+
+pub fn escreveByteUnitario(byte: u8) void {
+    escreveByte(byte);
+}
