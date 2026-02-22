@@ -1,0 +1,45 @@
+Objetivo
+Descrever passos iniciais para criar kernel ARM64 em Zig com foco em boot rapido, acesso a ext4 e total aderencia a boas praticas de seguranca e desempenho.
+
+Convencoes de codigo
+1. Todos nomes de funcoes, variaveis, estruturas e arquivos em portugues brasileiro sem acentos usando camelCase.
+2. Nunca utilizar palavra chave else; preferir retornos antecipados e funcoes auxiliares para manter fluxo claro.
+3. Priorizar seguranca (checagens de limites, validacao de ponteiros, isolamento de memoria) e alto throughput (evitar chamadas bloqueantes, usar estruturas enxutas).
+
+Ferramentas obrigatorias
+1. Zig estavel >= 0.12 configurado para target aarch64-freestanding.
+2. QEMU-system-aarch64 para testes rapidos de boot.
+3. Binutils ou llvm-objcopy para gerar imagens binarias prontas para boot.
+4. Ferramentas de manipulacao ext4 (mke2fs, debugfs) para preparar imagens de disco.
+
+Estrutura inicial sugerida
+1. pasta boot contendo codigo Zig de inicializacao e eventuais blobs assembly minimos para saltar para Zig.
+2. pasta kernel com subpastas memoria, scheduler, drivers, fs.
+3. pasta fs deve iniciar com modulo ext4Leitor zig capaz de montar descriptor block e ler inodes; escrita pode ficar para etapa posterior.
+4. pasta documentacao armazena todos os guias, inclusive este arquivo comando.txt.
+
+Passos imediatos
+1. Criar build.zig com targets separados: bootRom (imagem minima para firmware) e kernelImg (binario principal) com opcoes de otimizacao liberadas e stack canaries ativos.
+2. Implementar rotina bootJump que configure EL1, habilite MMU com paginacao identitaria inicial e limpe BSS antes de chamar funcao principal kernelMain.
+3. Em kernelMain configurar console serial PL011 para logs seguros e validar parametros passados pelo bootloader (enderecos de memoria, device tree).
+4. Construir camada memoria/paginacao com funcoes como mapaPagina, limpaPagina garantindo alinhamentos e checagens de overflow.
+5. Adicionar leitor ext4 inicial: carregar superbloco, validar magic 0xEF53, montar tabela de descritores de grupo e oferecer funcoes lerInodo, lerBloco com verificacao de CRC quando disponivel.
+
+Testes recomendados
+1. Script powershell runTests.ps1 que gere imagem ext4, injete kernel e execute QEMU com -d guestErrors para capturar falhas.
+2. Usar sanitizacao zig test --test-filter kern para cobrir unidades chave (paginacao, leitor ext4) em ambiente host.
+
+Checklist de seguranca e desempenho
+1. Sempre limpar registradores sensiveis antes de trocar de modo.
+2. Ativar XN (execute never) em regioes de dados.
+3. Minimizar copias de memoria, preferindo slices com lifetime controlado.
+4. Adicionar contadores de performance para medir ciclos de inicializacao e tempo de leitura ext4.
+
+Praticas de documentacao
+1. Cada novo modulo deve possuir arquivo markdown no diretório documentacao descrevendo responsabilidades e interface publica.
+2. Atualizar comando.txt sempre que fluxos principais mudarem.
+
+Proximos passos
+1. Implementar skeleton nas pastas boot e kernel conforme descrito.
+2. Configurar pipeline de build automatizada com zig build + execucao QEMU headless.
+3. Preparar plano de teste para suporte futuro a escrita ext4 e drivers adicionais (uart, timer, gpio).
